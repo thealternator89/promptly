@@ -91,7 +91,7 @@ const Viewer: React.FC = () => {
     switch (part.type) {
       case 'fixed': return part.text;
       case 'custom': return values[compositeId] || '';
-      case 'quote': return values[compositeId] ? `> ${values[compositeId]}` : '';
+      case 'quote': return values[compositeId] ? values[compositeId].split('\n').map(line => `> ${line}`).join('\n') : '';
       case 'code': return values[compositeId] ? `\`\`\`${languages[compositeId] || ''}\n${values[compositeId]}\n\`\`\`` : '';
       case 'hr': return '---';
       case 'repeatable': {
