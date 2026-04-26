@@ -15,11 +15,9 @@ const App: React.FC = () => {
   return (
     <Router>
       <div className="titlebar shadow-sm">
-        <span className="titlebar-content">
-          <Link to="/" className="text-decoration-none text-reset">
-            <i className="fa-solid fa-message me-2 text-primary"></i>
-            Promptly
-          </Link>
+        <span>
+          <i className="fa-solid fa-message me-2 text-primary"></i>
+          Promptly
         </span>
       </div>
 

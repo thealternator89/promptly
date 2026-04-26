@@ -32,12 +32,6 @@ input, textarea, [contenteditable="true"], code, .selectable {
   flex-shrink: 0;
 }
 
-/* For Windows/macOS title bar buttons if they're overlaid */
-.titlebar-content {
-  pointer-events: auto;
-  -webkit-app-region: no-drag;
-}
-
 .no-drag {
   -webkit-app-region: no-drag;
 }
