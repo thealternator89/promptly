@@ -43,7 +43,10 @@ const Library: React.FC = () => {
         <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
           {prompts.map((prompt) => (
             <div key={prompt.id} className="col">
-              <div className="card h-100 shadow-sm hover-shadow transition">
+              <div 
+                className="card h-100 shadow-sm hover-shadow transition cursor-pointer no-drag"
+                onClick={() => navigate(`/viewer/${prompt.id}`)}
+              >
                 <div className="card-body">
                   <h5 className="card-title text-primary">{prompt.title}</h5>
                   <p className="card-text text-muted text-truncate-2">{prompt.description}</p>

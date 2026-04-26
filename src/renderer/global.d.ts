@@ -1,8 +1,9 @@
 import { Prompt } from '../types';
 
-export interface IElectronAPI {
+export interface ElectronAPI {
   getPrompts: () => Promise<Prompt[]>;
-  createPrompt: (prompt: Prompt) => Promise<boolean>;
+  getPrompt: (id: string) => Promise<Prompt>;
+  createPrompt: (prompt: Prompt) => Promise<void>;
 }
 
 declare global {

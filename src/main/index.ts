@@ -36,6 +36,13 @@ ipcMain.handle('get-prompts', async () => {
   return prompts.sort((a, b) => b.createdAt - a.createdAt);
 });
 
+ipcMain.handle('get-prompt', async (event, id: string) => {
+  await ensurePromptsDir();
+  const filePath = path.join(PROMPTS_DIR, `${id}.json`);
+  const content = await fs.readFile(filePath, 'utf-8');
+  return JSON.parse(content) as Prompt;
+});
+
 ipcMain.handle('create-prompt', async (event, prompt: Prompt) => {
   await ensurePromptsDir();
   const filePath = path.join(PROMPTS_DIR, `${prompt.id}.json`);

@@ -2,6 +2,7 @@ import React from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import Library from './components/Library';
 import Editor from './components/Editor';
+import Viewer from './components/Viewer';
 
 const App: React.FC = () => {
   return (
@@ -17,6 +18,7 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<Library />} />
           <Route path="/editor" element={<Editor />} />
+          <Route path="/viewer/:id" element={<Viewer />} />
         </Routes>
       </div>
     </Router>
