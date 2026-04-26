@@ -4,9 +4,11 @@ An Electron-based desktop AI prompt builder and library. Craft modular AI templa
 
 ## Features
 
-- **Modular Library:** Store and manage your prompt collection in one place.
+- **Modular Library:** Store and manage your prompt collection in one place with drag-and-drop reordering.
 - **Repeatable Sections:** Define template blocks that can be duplicated multiple times in the viewer.
 - **Dynamic Inputs:** Add custom fields, code blocks (with language support), and quoted sections.
+- **URL Sanitization:** Automatic safety check for disallowed domains in generated prompts.
+- **Native Experience:** Custom title bar, non-selectable UI for a native feel, and global version footer.
 - **Precision Copying:** One-click copy with intelligent formatting (e.g., proper markdown quoting).
 - **Custom Branding:** Polished desktop experience with dedicated app icons and logo.
 
@@ -14,15 +16,16 @@ An Electron-based desktop AI prompt builder and library. Craft modular AI templa
 
 - **Framework:** [Electron](https://www.electronjs.org/) (via [Electron Forge](https://www.electronforge.io/))
 - **Frontend:** [React](https://reactjs.org/) + [TypeScript](https://www.typescriptlang.org/)
+- **Routing:** [React Router 7](https://reactrouter.com/)
 - **Build Tool:** [Webpack](https://webpack.js.org/)
 - **Styling:** Bootstrap 5 + FontAwesome 7
-- **Binary Assets:** Git LFS for icons and logos
+- **CI/CD:** GitHub Actions for automated cross-platform builds
 
 ## Getting Started
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (LTS recommended)
+- [Node.js](https://nodejs.org/) (Node 22+ recommended for CI parity)
 - [Git LFS](https://git-lfs.github.com/) (required for binary assets)
 
 ### Installation
