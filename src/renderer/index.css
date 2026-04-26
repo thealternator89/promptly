@@ -29,7 +29,8 @@ body {
 
 /* For Windows/macOS title bar buttons if they're overlaid */
 .titlebar-content {
-  pointer-events: none;
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
 }
 
 .no-drag {
@@ -70,3 +71,12 @@ body {
   border-style: dashed !important;
 }
 
+
+.app-footer {
+  flex-shrink: 0;
+  z-index: 1000;
+}
+
+.app-footer small {
+  font-size: 0.75rem;
+}

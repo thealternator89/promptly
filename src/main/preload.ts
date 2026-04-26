@@ -8,4 +8,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   savePromptsOrder: (ids: string[]) => ipcRenderer.invoke('save-prompts-order', ids),
   getSettings: () => ipcRenderer.invoke('get-settings'),
   saveSettings: (settings: any) => ipcRenderer.invoke('save-settings', settings),
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
 });

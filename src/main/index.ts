@@ -22,6 +22,8 @@ const ensurePromptsDir = async () => {
 };
 
 // IPC Handlers
+ipcMain.handle('get-app-version', () => app.getVersion());
+
 ipcMain.handle('get-settings', async () => {
   try {
     const content = await fs.readFile(SETTINGS_FILE, 'utf-8');

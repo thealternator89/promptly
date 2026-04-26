@@ -7,6 +7,7 @@ export interface ElectronAPI {
   savePromptsOrder: (ids: string[]) => Promise<void>;
   getSettings: () => Promise<{ disallowedDomains: string }>;
   saveSettings: (settings: { disallowedDomains: string }) => Promise<void>;
+  getAppVersion: () => Promise<string>;
 }
 
 declare global {
