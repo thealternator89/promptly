@@ -60,6 +60,7 @@ const createWindow = (): void => {
   const mainWindow = new BrowserWindow({
     height: 600,
     width: 800,
+    icon: path.join(__dirname, `../../assets/icon.${process.platform === 'win32' ? 'ico' : 'icns'}`),
     titleBarStyle: 'hidden',
     titleBarOverlay: process.platform === 'win32' ? {
       color: '#212529',

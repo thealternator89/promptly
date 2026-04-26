@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Prompt } from '../../types';
+import logo from '../../../assets/logo-full.png';
 
 const Library: React.FC = () => {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
@@ -18,10 +19,7 @@ const Library: React.FC = () => {
   return (
     <div className="container mt-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="text-primary mb-0">
-          <i className="fas fa-book me-2"></i>
-          Prompt Library
-        </h2>
+        <img src={logo} alt="Promptly Logo" style={{ height: '80px' }} />
         <button 
           className="btn btn-primary no-drag" 
           onClick={() => navigate('/editor')}
