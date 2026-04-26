@@ -1,2 +1,7 @@
-// See the Electron documentation for details on how to use preload scripts:
-// https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
+import { contextBridge, ipcRenderer } from 'electron';
+import { Prompt } from '../types';
+
+contextBridge.exposeInMainWorld('electronAPI', {
+  getPrompts: () => ipcRenderer.invoke('get-prompts'),
+  createPrompt: (prompt: Prompt) => ipcRenderer.invoke('create-prompt', prompt),
+});
