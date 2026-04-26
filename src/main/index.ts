@@ -24,8 +24,17 @@ const ensurePromptsDir = async () => {
 ipcMain.handle('get-prompts', async () => {
   await ensurePromptsDir();
   const files = await fs.readdir(PROMPTS_DIR);
-  const jsonFiles = files.filter(f => f.endsWith('.json'));
+  const jsonFiles = files.filter(f => f.endsWith('.json') && f !== 'order.json');
   
+  const orderFilePath = path.join(PROMPTS_DIR, 'order.json');
+  let order: string[] = [];
+  try {
+    const orderContent = await fs.readFile(orderFilePath, 'utf-8');
+    order = JSON.parse(orderContent);
+  } catch (e) {
+    // order.json doesn't exist yet or is invalid
+  }
+
   const prompts = await Promise.all(
     jsonFiles.map(async (file) => {
       const content = await fs.readFile(path.join(PROMPTS_DIR, file), 'utf-8');
@@ -33,7 +42,25 @@ ipcMain.handle('get-prompts', async () => {
     })
   );
   
-  return prompts.sort((a, b) => b.createdAt - a.createdAt);
+  return prompts.sort((a, b) => {
+    const indexA = order.indexOf(a.id);
+    const indexB = order.indexOf(b.id);
+    
+    if (indexA !== -1 && indexB !== -1) {
+      return indexA - indexB;
+    }
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    
+    return b.createdAt - a.createdAt;
+  });
+});
+
+ipcMain.handle('save-prompts-order', async (event, ids: string[]) => {
+  await ensurePromptsDir();
+  const filePath = path.join(PROMPTS_DIR, 'order.json');
+  await fs.writeFile(filePath, JSON.stringify(ids), 'utf-8');
+  return true;
 });
 
 ipcMain.handle('get-prompt', async (event, id: string) => {

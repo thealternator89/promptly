@@ -4,6 +4,7 @@ export interface ElectronAPI {
   getPrompts: () => Promise<Prompt[]>;
   getPrompt: (id: string) => Promise<Prompt>;
   createPrompt: (prompt: Prompt) => Promise<void>;
+  savePromptsOrder: (ids: string[]) => Promise<void>;
 }
 
 declare global {
