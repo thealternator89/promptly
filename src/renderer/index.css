@@ -5,6 +5,11 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden; /* Prevent scrolling for the whole body */
+  user-select: none; /* Make everything non-selectable by default */
+}
+
+input, textarea, [contenteditable="true"], code, .selectable {
+  user-select: text; /* Allow selection for inputs and text areas */
 }
 
 #root {

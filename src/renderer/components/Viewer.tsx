@@ -302,7 +302,7 @@ const Viewer: React.FC = () => {
 
         {part.type === 'fixed' && (
           <div className="card bg-light border-0">
-            <div className="card-body py-3 px-4 white-space-pre-wrap">
+            <div className="card-body py-3 px-4 white-space-pre-wrap selectable">
               {part.text}
             </div>
           </div>
