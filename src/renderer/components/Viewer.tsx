@@ -9,6 +9,7 @@ const Viewer: React.FC = () => {
   const [values, setValues] = useState<Record<string, string>>({});
   const [languages, setLanguages] = useState<Record<string, string>>({});
   const [repeatableInstances, setRepeatableInstances] = useState<Record<string, string[]>>({});
+  const [rawValues, setRawValues] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -83,6 +84,84 @@ const Viewer: React.FC = () => {
       ...prev,
       [partId]: prev[partId].filter(id => id !== instanceId)
     }));
+  };
+
+  const getFixedIndentation = (text: string): string => {
+    const lines = text.split('\n');
+    if (lines.length === 0) return text;
+
+    const firstLine = lines[0];
+    const hasFirstLineIndent = /^\s/.test(firstLine);
+    
+    const linesForMinIndent = (hasFirstLineIndent || lines.length === 1) 
+      ? lines 
+      : lines.slice(1);
+
+    let minIndent = Infinity;
+    let foundIndentedLine = false;
+
+    linesForMinIndent.forEach(line => {
+      if (line.trim().length === 0) return;
+      const match = line.match(/^(\s+)/);
+      const indent = match ? match[1].length : 0;
+      if (indent < minIndent) minIndent = indent;
+      foundIndentedLine = true;
+    });
+
+    if (!foundIndentedLine || minIndent === Infinity || minIndent === 0) return text;
+
+    return lines.map((line, index) => {
+      if (index === 0 && !hasFirstLineIndent && lines.length > 1) return line;
+      if (line.trim().length === 0) return '';
+      return line.slice(minIndent);
+    }).join('\n');
+  };
+
+  const fixIndentation = (compositeId: string) => {
+    const text = values[compositeId] || '';
+    const fixedText = getFixedIndentation(text);
+    if (fixedText !== text) {
+      setRawValues(prev => ({ ...prev, [compositeId]: text }));
+      handleUpdateValue(compositeId, fixedText);
+    }
+  };
+
+  const restoreIndentation = (compositeId: string) => {
+    if (rawValues[compositeId] !== undefined) {
+      handleUpdateValue(compositeId, rawValues[compositeId]);
+      setRawValues(prev => {
+        const next = { ...prev };
+        delete next[compositeId];
+        return next;
+      });
+    }
+  };
+
+  const handlePaste = (compositeId: string, e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    // We let the paste happen naturally first, then fix it
+    // Alternatively, we can preventDefault and handle it manually to be cleaner
+    const pastedText = e.clipboardData.getData('text');
+    const fixedText = getFixedIndentation(pastedText);
+    
+    if (fixedText !== pastedText) {
+      e.preventDefault();
+      
+      const textarea = e.currentTarget;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const currentText = values[compositeId] || '';
+      
+      const newText = currentText.substring(0, start) + fixedText + currentText.substring(end);
+      const fullRawText = currentText.substring(0, start) + pastedText + currentText.substring(end);
+      
+      setRawValues(prev => ({ ...prev, [compositeId]: fullRawText }));
+      handleUpdateValue(compositeId, newText);
+
+      // Reset selection after state update (using setTimeout to ensure it happens after render)
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + fixedText.length;
+      }, 0);
+    }
   };
 
   const generatePartText = (part: PromptPart, parentId?: string, instanceId?: string): string => {
@@ -212,9 +291,31 @@ const Viewer: React.FC = () => {
               placeholder={`Enter ${languages[compositeId] || 'code'} here...`}
               value={values[compositeId] || ''}
               onChange={(e) => handleUpdateValue(compositeId, e.target.value)}
+              onPaste={(e) => handlePaste(compositeId, e)}
               style={{ fontSize: '0.9rem' }}
             />
-            <div className="d-flex justify-content-end px-2 pb-2">
+            <div className="d-flex justify-content-between align-items-center px-2 pb-2">
+              {rawValues[compositeId] ? (
+                <button 
+                  className="btn btn-sm btn-outline-warning border-0 no-drag opacity-75" 
+                  onClick={() => restoreIndentation(compositeId)}
+                  title="Restore original indentation"
+                  style={{ fontSize: '0.7rem' }}
+                >
+                  <i className="fas fa-undo me-1"></i>
+                  Reset Indentation
+                </button>
+              ) : (
+                <button 
+                  className="btn btn-sm btn-outline-light border-0 no-drag opacity-75" 
+                  onClick={() => fixIndentation(compositeId)}
+                  title="Fix surplus indentation"
+                  style={{ fontSize: '0.7rem' }}
+                >
+                  <i className="fas fa-outdent me-1"></i>
+                  Fix Indentation
+                </button>
+              )}
               <div className="input-group input-group-sm" style={{ width: '160px' }}>
                 <span className="input-group-text bg-secondary border-0 text-white small" style={{ fontSize: '0.7rem' }}>Lang:</span>
                 <select
