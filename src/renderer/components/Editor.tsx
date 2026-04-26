@@ -180,13 +180,17 @@ const Editor: React.FC = () => {
               {part.type === 'code' && (
                 <div className="mb-0">
                   <label className="form-label small text-muted">Language</label>
-                  <input
-                    type="text"
-                    className="form-control no-drag"
+                  <select
+                    className="form-select no-drag"
                     value={part.language}
                     onChange={(e) => updatePart(part.id, { language: e.target.value })}
-                    placeholder="e.g. typescript, python, json"
-                  />
+                  >
+                    <option value="">None</option>
+                    <option value="csharp">C#</option>
+                    <option value="typescript">TypeScript</option>
+                    <option value="yaml">YAML</option>
+                    <option value="markdown">Markdown</option>
+                  </select>
                 </div>
               )}
 

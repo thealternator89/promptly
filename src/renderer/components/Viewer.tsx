@@ -7,6 +7,7 @@ const Viewer: React.FC = () => {
   const navigate = useNavigate();
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
+  const [languages, setLanguages] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -17,14 +18,19 @@ const Viewer: React.FC = () => {
         
         // Initialize values
         const initialValues: Record<string, string> = {};
+        const initialLanguages: Record<string, string> = {};
         data.parts.forEach((part: PromptPart) => {
           if (part.type === 'custom') {
             initialValues[part.id] = part.defaultText || '';
           } else {
             initialValues[part.id] = '';
           }
+          if (part.type === 'code') {
+            initialLanguages[part.id] = part.language || '';
+          }
         });
         setValues(initialValues);
+        setLanguages(initialLanguages);
       }
     };
     loadPrompt();
@@ -41,7 +47,7 @@ const Viewer: React.FC = () => {
         case 'fixed': return part.text;
         case 'custom': return values[part.id] || '';
         case 'quote': return values[part.id] ? `> ${values[part.id]}` : '';
-        case 'code': return values[part.id] ? `\`\`\`${part.language || ''}\n${values[part.id]}\n\`\`\`` : '';
+        case 'code': return values[part.id] ? `\`\`\`${languages[part.id] || ''}\n${values[part.id]}\n\`\`\`` : '';
         case 'hr': return '---';
         default: return '';
       }
@@ -78,12 +84,9 @@ const Viewer: React.FC = () => {
 
       <div className="viewer-parts mt-4">
         {prompt.parts.map((part) => (
-          <div key={part.id} className="mb-4">
-            <div className="d-flex justify-content-between align-items-center mb-2">
-              <span className="badge bg-light text-secondary text-uppercase border">{part.type}</span>
-              {part.type === 'code' && part.language && (
-                <span className="badge bg-info text-dark">{part.language}</span>
-              )}
+          <div key={part.id} className="mb-2">
+            <div className="d-flex justify-content-end gap-2 mb-2">
+              <span className="badge bg-light text-secondary text-uppercase border" style={{ fontSize: '0.65rem', opacity: 0.8 }}>{part.type}</span>
             </div>
 
             {part.type === 'fixed' && (
@@ -118,14 +121,33 @@ const Viewer: React.FC = () => {
             )}
 
             {part.type === 'code' && (
-              <textarea
-                className="form-control no-drag font-monospace bg-dark text-light border-0"
-                rows={5}
-                placeholder={`Enter ${part.language || 'code'} here...`}
-                value={values[part.id]}
-                onChange={(e) => handleUpdateValue(part.id, e.target.value)}
-                style={{ fontSize: '0.9rem' }}
-              />
+              <div className="bg-dark rounded overflow-hidden">
+                <textarea
+                  className="form-control no-drag font-monospace bg-dark text-light border-0"
+                  rows={5}
+                  placeholder={`Enter ${languages[part.id] || 'code'} here...`}
+                  value={values[part.id]}
+                  onChange={(e) => handleUpdateValue(part.id, e.target.value)}
+                  style={{ fontSize: '0.9rem' }}
+                />
+                <div className="d-flex justify-content-end px-2 pb-2">
+                  <div className="input-group input-group-sm" style={{ width: '160px' }}>
+                    <span className="input-group-text bg-secondary border-0 text-white small" style={{ fontSize: '0.7rem' }}>Lang:</span>
+                    <select
+                      className="form-select form-select-sm no-drag bg-secondary bg-opacity-25 border-0 text-white"
+                      value={languages[part.id]}
+                      onChange={(e) => setLanguages(prev => ({ ...prev, [part.id]: e.target.value }))}
+                      style={{ fontSize: '0.7rem', cursor: 'pointer' }}
+                    >
+                      <option value="">None</option>
+                      <option value="csharp">C#</option>
+                      <option value="typescript">TypeScript</option>
+                      <option value="yaml">YAML</option>
+                      <option value="markdown">Markdown</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
             )}
 
             {part.type === 'hr' && <hr className="my-4" />}
