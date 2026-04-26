@@ -6,4 +6,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getPrompt: (id: string) => ipcRenderer.invoke('get-prompt', id),
   createPrompt: (prompt: Prompt) => ipcRenderer.invoke('create-prompt', prompt),
   savePromptsOrder: (ids: string[]) => ipcRenderer.invoke('save-prompts-order', ids),
+  getSettings: () => ipcRenderer.invoke('get-settings'),
+  saveSettings: (settings: any) => ipcRenderer.invoke('save-settings', settings),
 });

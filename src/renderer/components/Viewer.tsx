@@ -6,6 +6,7 @@ const Viewer: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [prompt, setPrompt] = useState<Prompt | null>(null);
+  const [disallowedDomains, setDisallowedDomains] = useState<string[]>([]);
   const [values, setValues] = useState<Record<string, string>>({});
   const [languages, setLanguages] = useState<Record<string, string>>({});
   const [repeatableInstances, setRepeatableInstances] = useState<Record<string, string[]>>({});
@@ -13,10 +14,20 @@ const Viewer: React.FC = () => {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const loadPrompt = async () => {
+    const loadData = async () => {
       if (id) {
-        const data = await window.electronAPI.getPrompt(id);
+        const [data, settings] = await Promise.all([
+          window.electronAPI.getPrompt(id),
+          window.electronAPI.getSettings()
+        ]);
+        
         setPrompt(data);
+        setDisallowedDomains(
+          (settings.disallowedDomains || '')
+            .split('\n')
+            .map(d => d.trim())
+            .filter(d => d.length > 0)
+        );
         
         const initialValues: Record<string, string> = {};
         const initialLanguages: Record<string, string> = {};
@@ -48,7 +59,7 @@ const Viewer: React.FC = () => {
         setRepeatableInstances(initialRepeatableInstances);
       }
     };
-    loadPrompt();
+    loadData();
   }, [id]);
 
   const handleUpdateValue = (partId: string, value: string) => {
@@ -215,9 +226,56 @@ const Viewer: React.FC = () => {
     return finalTexts.filter(text => text !== '').join('\n\n');
   };
 
+  const stripDisallowedUrls = (text: string): string => {
+    if (disallowedDomains.length === 0) return text;
+
+    let sanitized = text;
+
+    // 1. Markdown links: [text](url)
+    sanitized = sanitized.replace(/\[([^\]]*)\]\(([^)]+)\)/g, (match, linkText, url) => {
+      try {
+        const parsedUrl = new URL(url);
+        const hostname = parsedUrl.hostname.toLowerCase();
+        
+        const isDisallowed = disallowedDomains.some(domain => 
+          hostname === domain.toLowerCase() || hostname.endsWith('.' + domain.toLowerCase())
+        );
+
+        if (isDisallowed) {
+          return `[${linkText}]()`;
+        }
+      } catch (e) {
+        // If it's not a valid absolute URL, we can't reliably check domain.
+      }
+      return match;
+    });
+
+    // 2. HTML links: href="url" or href='url'
+    sanitized = sanitized.replace(/href=(["'])([^"']+)\1/g, (match, quote, url) => {
+      try {
+        const parsedUrl = new URL(url);
+        const hostname = parsedUrl.hostname.toLowerCase();
+
+        const isDisallowed = disallowedDomains.some(domain => 
+          hostname === domain.toLowerCase() || hostname.endsWith('.' + domain.toLowerCase())
+        );
+
+        if (isDisallowed) {
+          return `href=${quote}${quote}`;
+        }
+      } catch (e) {
+        // Handle invalid URL
+      }
+      return match;
+    });
+
+    return sanitized;
+  };
+
   const handleCopy = () => {
     const text = getFullPrompt();
-    navigator.clipboard.writeText(text);
+    const sanitizedText = stripDisallowedUrls(text);
+    navigator.clipboard.writeText(sanitizedText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

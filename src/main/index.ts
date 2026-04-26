@@ -10,6 +10,7 @@ declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
 const PROMPTS_DIR = path.join(app.getPath('userData'), 'prompts');
+const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json');
 
 // Ensure the prompts directory exists
 const ensurePromptsDir = async () => {
@@ -21,6 +22,20 @@ const ensurePromptsDir = async () => {
 };
 
 // IPC Handlers
+ipcMain.handle('get-settings', async () => {
+  try {
+    const content = await fs.readFile(SETTINGS_FILE, 'utf-8');
+    return JSON.parse(content);
+  } catch (e) {
+    return { disallowedDomains: '' };
+  }
+});
+
+ipcMain.handle('save-settings', async (event, settings) => {
+  await fs.writeFile(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8');
+  return true;
+});
+
 ipcMain.handle('get-prompts', async () => {
   await ensurePromptsDir();
   const files = await fs.readdir(PROMPTS_DIR);

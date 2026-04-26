@@ -119,13 +119,22 @@ const Library: React.FC = () => {
     <div className="container mt-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <img src={logo} alt="Promptly Logo" style={{ height: '80px' }} />
-        <button 
-          className="btn btn-primary no-drag" 
-          onClick={() => navigate('/editor')}
-        >
-          <i className="fas fa-plus-circle me-1"></i>
-          Create
-        </button>
+        <div className="d-flex gap-2">
+          <button 
+            className="btn btn-outline-secondary no-drag" 
+            onClick={() => navigate('/settings')}
+            title="Settings"
+          >
+            <i className="fas fa-cog"></i>
+          </button>
+          <button 
+            className="btn btn-primary no-drag" 
+            onClick={() => navigate('/editor')}
+          >
+            <i className="fas fa-plus-circle me-1"></i>
+            Create
+          </button>
+        </div>
       </div>
 
       {prompts.length === 0 ? (
