@@ -1,12 +1,27 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Prompt, PromptPart, PromptPartType } from '../../types';
 
 const Editor: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [parts, setParts] = useState<PromptPart[]>([]);
+  const [createdAt, setCreatedAt] = useState<number>(Date.now());
+
+  useEffect(() => {
+    const loadPrompt = async () => {
+      if (id) {
+        const prompt = await window.electronAPI.getPrompt(id);
+        setTitle(prompt.title);
+        setDescription(prompt.description);
+        setParts(prompt.parts);
+        setCreatedAt(prompt.createdAt);
+      }
+    };
+    loadPrompt();
+  }, [id]);
 
   const addPart = (type: PromptPartType) => {
     const newPart: any = {
@@ -47,23 +62,23 @@ const Editor: React.FC = () => {
     }
 
     const prompt: Prompt = {
-      id: Date.now().toString(),
+      id: id || Date.now().toString(),
       title,
       description,
-      createdAt: Date.now(),
+      createdAt,
       parts,
     };
 
     await window.electronAPI.createPrompt(prompt);
-    navigate('/');
+    navigate(id ? `/viewer/${id}` : '/');
   };
 
   return (
     <div className="container mt-4 mb-5">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2 className="text-primary mb-0">
-          <i className="fas fa-edit me-2"></i>
-          Create Prompt
+          <i className={`fas ${id ? 'fa-edit' : 'fa-plus-circle'} me-2`}></i>
+          {id ? 'Edit Prompt' : 'Create Prompt'}
         </h2>
         <div>
           <button className="btn btn-outline-secondary me-2 no-drag" onClick={() => navigate('/')}>

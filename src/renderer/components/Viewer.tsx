@@ -59,7 +59,7 @@ const Viewer: React.FC = () => {
 
   return (
     <div className="container mt-4 mb-5">
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex justify-content-between align-items-start mb-4">
         <div>
           <button className="btn btn-sm btn-outline-secondary mb-2 no-drag" onClick={() => navigate('/')}>
             <i className="fas fa-arrow-left me-1"></i> Back to Library
@@ -67,6 +67,13 @@ const Viewer: React.FC = () => {
           <h2 className="text-primary mb-0">{prompt.title}</h2>
           <p className="text-muted mb-0">{prompt.description}</p>
         </div>
+        <button 
+          className="btn btn-outline-primary no-drag" 
+          onClick={() => navigate(`/editor/${prompt.id}`)}
+        >
+          <i className="fas fa-edit me-1"></i>
+          Edit
+        </button>
       </div>
 
       <div className="viewer-parts mt-4">

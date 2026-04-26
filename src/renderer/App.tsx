@@ -18,6 +18,7 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<Library />} />
           <Route path="/editor" element={<Editor />} />
+          <Route path="/editor/:id" element={<Editor />} />
           <Route path="/viewer/:id" element={<Viewer />} />
         </Routes>
       </div>
