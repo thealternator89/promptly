@@ -5,47 +5,41 @@ This project follows Electron's recommended security practices by separating the
 ## Process Model
 
 - **Main Process (`src/main/index.ts`):**
-  - Manages application lifecycle.
-  - Controls native OS features.
-  - Can access Node.js APIs directly.
-  - Spawns the main window.
+  - Manages application lifecycle and native OS features.
+  - Handles file persistence for prompts in the user data directory.
 - **Preload Script (`src/main/preload.ts`):**
-  - A secure bridge between the main and renderer processes.
-  - Runs in a renderer context but has access to Node.js APIs.
-  - Exposes APIs to the renderer using `contextBridge.exposeInMainWorld`.
+  - Secure bridge exposing safe IPC methods to the renderer.
 - **Renderer Process (`src/renderer/renderer.tsx`):**
-  - The UI (React).
-  - Runs in a sandboxed environment for security.
-  - Accesses OS/Main features only through the bridge provided by the preload script.
+  - React-based UI that manages state and user interaction.
+
+## Data Structure
+
+Prompts are stored as JSON files. A `Prompt` consists of multiple `PromptPart` objects, which can be:
+- `fixed`: Static text.
+- `custom`: User-fillable text field.
+- `quote`: Blockquote text.
+- `code`: Formatted code block with language selection.
+- `repeatable`: A recursive container that holds a template of other parts.
+
+### Repeatable Sections
+The architecture supports recursive nesting of parts within repeatable sections. In the Viewer, these sections can be instantiated multiple times.
+
+## State Management (Viewer)
+
+To handle dynamic instances of repeatable sections without complex nested state, the Viewer uses **Composite Keys**:
+- **Format:** `parentId_instanceId_childId`
+- **Benefit:** Keeps the state flat in a single object while ensuring each input field in every instance remains unique and isolated.
 
 ## Inter-Process Communication (IPC)
 
-When the renderer needs to perform a task that requires Node.js (e.g., interacting with the file system or executing shell commands), it should use IPC.
-
-1.  **Define IPC Handler in Main Process:**
-    ```typescript
-    import { ipcMain } from 'electron';
-    ipcMain.handle('some-action', async (event, data) => {
-      // Perform action in Node.js
-      return result;
-    });
-    ```
-
-2.  **Expose IPC Method in Preload Script:**
-    ```typescript
-    import { contextBridge, ipcRenderer } from 'electron';
-    contextBridge.exposeInMainWorld('electronAPI', {
-      doSomething: (data) => ipcRenderer.invoke('some-action', data)
-    });
-    ```
-
-3.  **Use in React Component:**
-    ```typescript
-    const result = await (window as any).electronAPI.doSomething(data);
-    ```
+The renderer communicates with the main process for file operations:
+1. `get-prompts`: Retrieves all saved prompts.
+2. `get-prompt`: Fetches a specific prompt by ID.
+3. `create-prompt`: Saves or updates a prompt.
 
 ## Development Workflow
 
-- **Styling:** Vanilla CSS is preferred for maximum flexibility. Global styles should be placed in `src/renderer/index.css`.
-- **Components:** React components should be modular and placed in `src/renderer/components`.
-- **Types:** TypeScript is used throughout to ensure type safety. Shared types can be kept in a `src/types` directory.
+- **Styling:** Vanilla CSS + Bootstrap 5.
+- **Components:** Modular React components in `src/renderer/components`.
+- **Types:** Centralized TypeScript definitions in `src/types/index.ts`.
+- **Assets:** Binary files (icons, logos) are managed via Git LFS.
