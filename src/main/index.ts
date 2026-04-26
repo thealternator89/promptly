@@ -102,8 +102,8 @@ if (require('electron-squirrel-startup')) {
 const createWindow = (): void => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    height: 600,
-    width: 800,
+    height: 768,
+    width: 1366,
     icon: path.join(__dirname, `../../assets/icon.${process.platform === 'win32' ? 'ico' : 'icns'}`),
     titleBarStyle: 'hidden',
     titleBarOverlay: process.platform === 'win32' ? {
