@@ -1,4 +1,4 @@
-export type PromptPartType = 'fixed' | 'custom' | 'quote' | 'code' | 'hr' | 'repeatable';
+export type PromptPartType = 'fixed' | 'custom' | 'quote' | 'code' | 'hr' | 'repeatable' | 'heading';
 
 export interface BasePart {
   id: string;
@@ -10,10 +10,18 @@ export interface FixedPart extends BasePart {
   text: string;
 }
 
+export interface HeadingPart extends BasePart {
+  type: 'heading';
+  text: string;
+  level: 1 | 2 | 3;
+  excludeIfNextEmpty?: boolean;
+}
+
 export interface CustomPart extends BasePart {
   type: 'custom';
   defaultText?: string;
   placeholder?: string;
+  singleLine?: boolean;
 }
 
 export interface QuotePart extends BasePart {
@@ -34,7 +42,7 @@ export interface RepeatablePart extends BasePart {
   templateParts: PromptPart[];
 }
 
-export type PromptPart = FixedPart | CustomPart | QuotePart | CodePart | HRPart | RepeatablePart;
+export type PromptPart = FixedPart | CustomPart | QuotePart | CodePart | HRPart | RepeatablePart | HeadingPart;
 
 export interface Prompt {
   id: string;

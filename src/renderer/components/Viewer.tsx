@@ -89,6 +89,7 @@ const Viewer: React.FC = () => {
     const compositeId = parentId && instanceId ? `${parentId}_${instanceId}_${part.id}` : part.id;
     
     switch (part.type) {
+      case 'heading': return '#'.repeat(part.level) + ' ' + part.text;
       case 'fixed': return part.text;
       case 'custom': return values[compositeId] || '';
       case 'quote': return values[compositeId] ? values[compositeId].split('\n').map(line => `> ${line}`).join('\n') : '';
@@ -97,7 +98,19 @@ const Viewer: React.FC = () => {
       case 'repeatable': {
         const instances = repeatableInstances[part.id] || [];
         return instances.map(instId => {
-          return part.templateParts.map(tp => generatePartText(tp, part.id, instId)).filter(t => t !== '').join('\n\n');
+          const texts = part.templateParts.map(tp => generatePartText(tp, part.id, instId));
+          
+          // Second pass: handle conditional headings
+          const finalTexts = texts.map((text, i) => {
+            const currentPart = part.templateParts[i];
+            if (currentPart.type === 'heading' && currentPart.excludeIfNextEmpty) {
+              const nextText = texts[i + 1] || '';
+              if (!nextText.trim()) return '';
+            }
+            return text;
+          });
+
+          return finalTexts.filter(t => t !== '').join('\n\n');
         }).filter(t => t !== '').join('\n\n');
       }
       default: return '';
@@ -106,7 +119,21 @@ const Viewer: React.FC = () => {
 
   const getFullPrompt = () => {
     if (!prompt) return '';
-    return prompt.parts.map(part => generatePartText(part)).filter(text => text !== '').join('\n\n');
+    
+    // First pass: generate all texts
+    const texts = prompt.parts.map(part => generatePartText(part));
+    
+    // Second pass: handle conditional headings
+    const finalTexts = texts.map((text, i) => {
+      const currentPart = prompt.parts[i];
+      if (currentPart.type === 'heading' && currentPart.excludeIfNextEmpty) {
+        const nextText = texts[i + 1] || '';
+        if (!nextText.trim()) return '';
+      }
+      return text;
+    });
+
+    return finalTexts.filter(text => text !== '').join('\n\n');
   };
 
   const handleCopy = () => {
@@ -128,6 +155,14 @@ const Viewer: React.FC = () => {
           </div>
         )}
 
+        {part.type === 'heading' && (
+          <div className="py-2">
+            {part.level === 1 && <h1 className="mb-0">{part.text}</h1>}
+            {part.level === 2 && <h2 className="mb-0">{part.text}</h2>}
+            {part.level === 3 && <h3 className="mb-0">{part.text}</h3>}
+          </div>
+        )}
+
         {part.type === 'fixed' && (
           <div className="card bg-light border-0">
             <div className="card-body py-3 px-4 white-space-pre-wrap">
@@ -137,13 +172,23 @@ const Viewer: React.FC = () => {
         )}
 
         {part.type === 'custom' && (
-          <textarea
-            className="form-control no-drag border-primary border-start border-4"
-            rows={3}
-            placeholder={part.placeholder || "Enter text..."}
-            value={values[compositeId] || ''}
-            onChange={(e) => handleUpdateValue(compositeId, e.target.value)}
-          />
+          part.singleLine ? (
+            <input
+              type="text"
+              className="form-control no-drag border-primary border-start border-4"
+              placeholder={part.placeholder || "Enter text..."}
+              value={values[compositeId] || ''}
+              onChange={(e) => handleUpdateValue(compositeId, e.target.value)}
+            />
+          ) : (
+            <textarea
+              className="form-control no-drag border-primary border-start border-4"
+              rows={3}
+              placeholder={part.placeholder || "Enter text..."}
+              value={values[compositeId] || ''}
+              onChange={(e) => handleUpdateValue(compositeId, e.target.value)}
+            />
+          )
         )}
 
         {part.type === 'quote' && (

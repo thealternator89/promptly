@@ -32,9 +32,15 @@ const Editor: React.FC = () => {
     };
 
     if (type === 'fixed') newPart.text = '';
+    if (type === 'heading') {
+      newPart.text = '';
+      newPart.level = 1;
+      newPart.excludeIfNextEmpty = false;
+    }
     if (type === 'custom') {
       newPart.defaultText = '';
       newPart.placeholder = '';
+      newPart.singleLine = false;
     }
     if (type === 'code') newPart.language = 'typescript';
     if (type === 'repeatable') newPart.templateParts = [];
@@ -149,6 +155,43 @@ const Editor: React.FC = () => {
             </div>
           </div>
 
+          {part.type === 'heading' && (
+            <div className="row g-2">
+              <div className="col-md-2">
+                <select
+                  className="form-select no-drag"
+                  value={part.level}
+                  onChange={(e) => updatePart(part.id, { level: parseInt(e.target.value) as 1|2|3 }, parentId)}
+                >
+                  <option value={1}>H1</option>
+                  <option value={2}>H2</option>
+                  <option value={3}>H3</option>
+                </select>
+              </div>
+              <div className="col-md-10">
+                <input
+                  type="text"
+                  className={`form-control no-drag h${part.level} mb-0`}
+                  placeholder="Enter heading text..."
+                  value={part.text}
+                  onChange={(e) => updatePart(part.id, { text: e.target.value }, parentId)}
+                />
+                <div className="form-check mt-2">
+                  <input
+                    className="form-check-input no-drag"
+                    type="checkbox"
+                    id={`exclude-${part.id}`}
+                    checked={part.excludeIfNextEmpty || false}
+                    onChange={(e) => updatePart(part.id, { excludeIfNextEmpty: e.target.checked }, parentId)}
+                  />
+                  <label className="form-check-label small text-muted" htmlFor={`exclude-${part.id}`}>
+                    Exclude if next part is empty
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
+
           {part.type === 'fixed' && (
             <textarea
               className="form-control no-drag"
@@ -177,6 +220,20 @@ const Editor: React.FC = () => {
                   value={part.placeholder}
                   onChange={(e) => updatePart(part.id, { placeholder: e.target.value }, parentId)}
                 />
+              </div>
+              <div className="col-12 mt-2">
+                <div className="form-check">
+                  <input
+                    className="form-check-input no-drag"
+                    type="checkbox"
+                    id={`singleline-${part.id}`}
+                    checked={part.singleLine || false}
+                    onChange={(e) => updatePart(part.id, { singleLine: e.target.checked }, parentId)}
+                  />
+                  <label className="form-check-label small text-muted" htmlFor={`singleline-${part.id}`}>
+                    Single line
+                  </label>
+                </div>
               </div>
             </div>
           )}
@@ -211,6 +268,9 @@ const Editor: React.FC = () => {
                 {part.templateParts.map((subPart, subIndex) => renderPart(subPart, subIndex, part.id, part.templateParts.length))}
                 
                 <div className="d-flex justify-content-center flex-wrap gap-2 mt-2">
+                  <button className="btn btn-sm btn-outline-info no-drag" onClick={() => addPart('heading', part.id)}>
+                    <i className="fas fa-heading me-1"></i> Heading
+                  </button>
                   <button className="btn btn-sm btn-outline-info no-drag" onClick={() => addPart('fixed', part.id)}>
                     <i className="fas fa-font me-1"></i> Fixed
                   </button>
@@ -288,6 +348,9 @@ const Editor: React.FC = () => {
         <div className="card-body text-center py-4">
           <h5 className="mb-3 text-muted">Add a Part</h5>
           <div className="d-flex justify-content-center flex-wrap gap-2">
+            <button className="btn btn-outline-primary no-drag" onClick={() => addPart('heading')}>
+              <i className="fas fa-heading me-1"></i> Heading
+            </button>
             <button className="btn btn-outline-primary no-drag" onClick={() => addPart('fixed')}>
               <i className="fas fa-font me-1"></i> Fixed Text
             </button>
