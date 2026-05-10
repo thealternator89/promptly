@@ -5,9 +5,13 @@ An Electron-based desktop AI prompt builder and library. Craft modular AI templa
 ## Features
 
 - **Modular Library:** Store and manage your prompt collection in one place with drag-and-drop reordering.
+- **Scratchpad:** A dedicated temporary workspace for building ad-hoc prompts without saving them to your library.
 - **Repeatable Sections:** Define template blocks that can be duplicated multiple times in the viewer.
-- **Dynamic Inputs:** Add custom fields, code blocks (with language support), and quoted sections.
+- **Dynamic Inputs:** Add headings, custom fields, code blocks (with expanded language support), and quoted sections.
+- **Session Editability:** Reorder or remove parts within the viewer for a specific session without altering the master template.
+- **Sticky Navigation:** Persistent headers in both Editor and Viewer ensure quick access to "Save" and "Copy" actions.
 - **URL Sanitization:** Automatic safety check for disallowed domains in generated prompts.
+- **Add to Library:** One-click conversion from a Scratchpad session to a permanent library template.
 - **Native Experience:** Custom title bar, non-selectable UI for a native feel, and global version footer.
 - **Precision Copying:** One-click copy with intelligent formatting (e.g., proper markdown quoting).
 - **Custom Branding:** Polished desktop experience with dedicated app icons and logo.
