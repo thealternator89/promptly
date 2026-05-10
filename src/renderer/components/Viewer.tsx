@@ -1,17 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Prompt, PromptPart, RepeatablePart } from '../../types';
 
 const Viewer: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [prompt, setPrompt] = useState<Prompt | null>(null);
+  const [sessionParts, setSessionParts] = useState<PromptPart[]>([]);
   const [disallowedDomains, setDisallowedDomains] = useState<string[]>([]);
   const [values, setValues] = useState<Record<string, string>>({});
   const [languages, setLanguages] = useState<Record<string, string>>({});
   const [repeatableInstances, setRepeatableInstances] = useState<Record<string, string[]>>({});
   const [rawValues, setRawValues] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     const loadData = async () => {
@@ -22,6 +51,7 @@ const Viewer: React.FC = () => {
         ]);
         
         setPrompt(data);
+        setSessionParts(data.parts);
         setDisallowedDomains(
           (settings.disallowedDomains || '')
             .split('\n')
@@ -43,6 +73,8 @@ const Viewer: React.FC = () => {
               const firstInstanceId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
               initialRepeatableInstances[part.id] = [firstInstanceId];
               initializeParts(part.templateParts, part.id, firstInstanceId);
+            } else if (part.type === 'quote' || part.type === 'code') {
+              initialValues[compositeId] = '';
             } else {
               initialValues[compositeId] = '';
             }
@@ -64,6 +96,42 @@ const Viewer: React.FC = () => {
 
   const handleUpdateValue = (partId: string, value: string) => {
     setValues(prev => ({ ...prev, [partId]: value }));
+  };
+
+  const handleAddSessionPart = (type: 'custom' | 'quote' | 'code' | 'hr') => {
+    const newId = 'session_' + Date.now().toString() + Math.random().toString(36).substr(2, 5);
+    const newPart: any = { id: newId, type };
+    
+    if (type === 'custom') {
+      newPart.placeholder = 'Enter text...';
+    } else if (type === 'code') {
+      newPart.language = 'typescript';
+    }
+
+    setSessionParts(prev => [...prev, newPart as PromptPart]);
+    
+    if (type !== 'hr') {
+      setValues(prev => ({ ...prev, [newId]: '' }));
+    }
+    if (type === 'code') {
+      setLanguages(prev => ({ ...prev, [newId]: 'typescript' }));
+    }
+  };
+
+  const handleRemoveSessionPart = (id: string) => {
+    setSessionParts(prev => prev.filter(p => p.id !== id));
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setSessionParts((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
   };
 
   const addInstance = (repeatablePart: RepeatablePart) => {
@@ -211,11 +279,11 @@ const Viewer: React.FC = () => {
     if (!prompt) return '';
     
     // First pass: generate all texts
-    const texts = prompt.parts.map(part => generatePartText(part));
+    const texts = sessionParts.map(part => generatePartText(part));
     
     // Second pass: handle conditional headings
     const finalTexts = texts.map((text, i) => {
-      const currentPart = prompt.parts[i];
+      const currentPart = sessionParts[i];
       if (currentPart.type === 'heading' && currentPart.excludeIfNextEmpty) {
         const nextText = texts[i + 1] || '';
         if (!nextText.trim()) return '';
@@ -280,15 +348,57 @@ const Viewer: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const renderPart = (part: PromptPart, parentId?: string, instanceId?: string) => {
+  const SortablePart: React.FC<{ part: PromptPart }> = ({ part }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: part.id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      zIndex: isDragging ? 1000 : 0,
+      position: 'relative' as const,
+      opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+      <div ref={setNodeRef} style={style}>
+        {renderPart(part, undefined, undefined, attributes, listeners)}
+      </div>
+    );
+  };
+
+  const renderPart = (part: PromptPart, parentId?: string, instanceId?: string, attributes?: any, listeners?: any) => {
     const compositeId = parentId && instanceId ? `${parentId}_${instanceId}_${part.id}` : part.id;
     const isNested = !!parentId;
 
     return (
-      <div key={compositeId} className="mb-2">
+      <div key={compositeId} className="mb-2 position-relative group">
         {!isNested && (
-          <div className="d-flex justify-content-end gap-2 mb-2">
-            <span className="badge bg-light text-secondary text-uppercase border" style={{ fontSize: '0.65rem', opacity: 0.8 }}>{part.type}</span>
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <div className="d-flex align-items-center gap-2">
+              <div 
+                className="cursor-pointer text-muted opacity-50 hover-opacity-100 transition no-drag"
+                {...attributes}
+                {...listeners}
+                title="Drag to reorder"
+              >
+                <i className="fas fa-grip-vertical"></i>
+              </div>
+              <span className="badge bg-light text-secondary text-uppercase border" style={{ fontSize: '0.65rem', opacity: 0.8 }}>{part.type}</span>
+            </div>
+            <button 
+              className="btn btn-sm text-danger opacity-0 group-hover-opacity-100 no-drag transition" 
+              onClick={() => handleRemoveSessionPart(part.id)}
+              title="Remove section"
+            >
+              <i className="fas fa-trash-alt"></i>
+            </button>
           </div>
         )}
 
@@ -414,7 +524,7 @@ const Viewer: React.FC = () => {
                   </button>
                 </div>
                 <div className="card-body p-3">
-                  {part.templateParts.map(tp => renderPart(tp, part.id, instId))}
+                  {part.templateParts.map(tp => renderPart(tp, part.id, instId, undefined, undefined))}
                 </div>
               </div>
             ))}
@@ -453,7 +563,38 @@ const Viewer: React.FC = () => {
       </div>
 
       <div className="viewer-parts mt-4">
-        {prompt.parts.map((part) => renderPart(part))}
+        <DndContext 
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext 
+            items={sessionParts.map(p => p.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            {sessionParts.map((part) => (
+              <SortablePart key={part.id} part={part} />
+            ))}
+          </SortableContext>
+        </DndContext>
+
+        <div className="mt-4 pt-3 border-top">
+          <h6 className="text-muted mb-3 small fw-bold text-uppercase">Add temporary section</h6>
+          <div className="d-flex flex-wrap gap-2">
+            <button className="btn btn-sm btn-outline-primary no-drag" onClick={() => handleAddSessionPart('custom')}>
+              <i className="fas fa-keyboard me-1"></i> Custom Input
+            </button>
+            <button className="btn btn-sm btn-outline-primary no-drag" onClick={() => handleAddSessionPart('quote')}>
+              <i className="fas fa-quote-left me-1"></i> Quote
+            </button>
+            <button className="btn btn-sm btn-outline-primary no-drag" onClick={() => handleAddSessionPart('code')}>
+              <i className="fas fa-code me-1"></i> Code Block
+            </button>
+            <button className="btn btn-sm btn-outline-primary no-drag" onClick={() => handleAddSessionPart('hr')}>
+              <i className="fas fa-minus me-1"></i> Rule
+            </button>
+          </div>
+        </div>
 
         <div className="mt-5 pt-3 border-top text-center">
           <button className={`btn ${copied ? 'btn-success' : 'btn-primary'} no-drag shadow-sm px-4`} onClick={handleCopy}>

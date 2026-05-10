@@ -70,6 +70,17 @@ input, textarea, [contenteditable="true"], code, .selectable {
   border-style: dashed !important;
 }
 
+.group:hover .group-hover-opacity-100 {
+  opacity: 1 !important;
+}
+
+.opacity-0 {
+  opacity: 0;
+}
+
+.hover-opacity-100:hover {
+  opacity: 1 !important;
+}
 
 .app-footer {
   flex-shrink: 0;
