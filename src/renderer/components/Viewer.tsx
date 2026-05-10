@@ -44,6 +44,28 @@ const Viewer: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
+      if (id === 'scratchpad') {
+        const settings = await window.electronAPI.getSettings();
+        setPrompt({
+          id: 'scratchpad',
+          title: 'Scratchpad',
+          description: 'Temporary workspace for ad-hoc prompts',
+          parts: [],
+          createdAt: Date.now()
+        });
+        setSessionParts([]);
+        setDisallowedDomains(
+          (settings.disallowedDomains || '')
+            .split('\n')
+            .map(d => d.trim())
+            .filter(d => d.length > 0)
+        );
+        setValues({});
+        setLanguages({});
+        setRepeatableInstances({});
+        return;
+      }
+
       if (id) {
         const [data, settings] = await Promise.all([
           window.electronAPI.getPrompt(id),
@@ -553,13 +575,15 @@ const Viewer: React.FC = () => {
           <h2 className="text-primary mb-0">{prompt.title}</h2>
           <p className="text-muted mb-0">{prompt.description}</p>
         </div>
-        <button 
-          className="btn btn-outline-primary no-drag" 
-          onClick={() => navigate(`/editor/${prompt.id}`)}
-        >
-          <i className="fas fa-edit me-1"></i>
-          Edit
-        </button>
+        {id !== 'scratchpad' && (
+          <button 
+            className="btn btn-outline-primary no-drag" 
+            onClick={() => navigate(`/editor/${prompt.id}`)}
+          >
+            <i className="fas fa-edit me-1"></i>
+            Edit
+          </button>
+        )}
       </div>
 
       <div className="viewer-parts mt-4">

@@ -137,36 +137,54 @@ const Library: React.FC = () => {
         </div>
       </div>
 
-      {prompts.length === 0 ? (
-        <div className="card shadow-sm">
-          <div className="card-body text-center py-5">
-            <i className="fas fa-folder-open fa-3x text-muted mb-3"></i>
-            <h3 className="text-muted">No prompts found</h3>
-            <p className="lead text-muted">Click the button above to create your first prompt.</p>
+    <DndContext 
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {/* Scratchpad Card */}
+        <div className="col">
+          <div 
+            className="card h-100 shadow-sm hover-shadow transition cursor-pointer border-dashed"
+            onClick={() => navigate('/viewer/scratchpad')}
+            style={{ borderStyle: 'dashed', borderWidth: '2px' }}
+          >
+            <div className="card-body">
+              <h5 className="card-title text-primary d-flex align-items-center">
+                <i className="fas fa-file-signature me-2"></i>
+                Scratchpad
+              </h5>
+              <p className="card-text text-muted text-truncate-2">Temporary workspace for ad-hoc prompts</p>
+            </div>
+            <div className="card-footer bg-transparent border-top-0 text-muted small pb-3 d-flex justify-content-end">
+              <span className="badge bg-light text-secondary border">Ad-hoc Space</span>
+            </div>
           </div>
         </div>
-      ) : (
-        <DndContext 
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
+
+        {/* Saved Prompts */}
+        <SortableContext 
+          items={prompts.map(p => p.id)}
+          strategy={rectSortingStrategy}
         >
-          <SortableContext 
-            items={prompts.map(p => p.id)}
-            strategy={rectSortingStrategy}
-          >
-            <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-              {prompts.map((prompt) => (
-                <SortablePromptCard 
-                  key={prompt.id} 
-                  prompt={prompt} 
-                  onClick={() => navigate(`/viewer/${prompt.id}`)}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-      )}
+          {prompts.map((prompt) => (
+            <SortablePromptCard 
+              key={prompt.id} 
+              prompt={prompt} 
+              onClick={() => navigate(`/viewer/${prompt.id}`)}
+            />
+          ))}
+        </SortableContext>
+      </div>
+    </DndContext>
+
+    {prompts.length === 0 && (
+      <div className="text-center mt-5 py-4 opacity-50">
+        <i className="fas fa-folder-open fa-2x text-muted mb-2"></i>
+        <p className="text-muted">No saved prompt templates yet.<br/>Click "Create" to build your first one.</p>
+      </div>
+    )}
     </div>
   );
 };
