@@ -640,28 +640,34 @@ const Viewer: React.FC = () => {
   if (!prompt) return <div className="container mt-4">Loading...</div>;
 
   return (
-    <div className="container mt-4 mb-5">
-      <div className="d-flex justify-content-between align-items-start mb-4">
-        <div>
-          <button className="btn btn-sm btn-outline-secondary mb-2 no-drag" onClick={() => navigate('/')}>
-            <i className="fas fa-arrow-left me-1"></i> Back to Library
-          </button>
-          <h2 className="text-primary mb-0">{prompt.title}</h2>
-          <p className="text-muted mb-0">{prompt.description}</p>
+    <div className="mb-5">
+      <div className="sticky-top bg-white border-bottom shadow-sm mb-4" style={{ zIndex: 1020, margin: '-1rem -1rem 1.5rem -1rem', padding: '0.75rem 0', top: '-1rem' }}>
+        <div className="container">
+          <div className="d-flex justify-content-between align-items-center px-1">
+            <div className="d-flex align-items-center gap-3">
+              <button className="btn btn-sm btn-light border no-drag" onClick={() => navigate('/')} title="Back to Library">
+                <i className="fas fa-arrow-left"></i>
+              </button>
+              <h4 className="mb-0 text-dark fw-bold">{prompt.title}</h4>
+            </div>
+            <div className="d-flex gap-2">
+              {id !== 'scratchpad' && (
+                <button 
+                  className="btn btn-sm btn-outline-primary no-drag" 
+                  onClick={() => navigate(`/editor/${prompt.id}`)}
+                >
+                  <i className="fas fa-edit me-1"></i>
+                  Edit
+                </button>
+              )}
+            </div>
+          </div>
         </div>
-        {id !== 'scratchpad' && (
-          <button 
-            className="btn btn-outline-primary no-drag" 
-            onClick={() => navigate(`/editor/${prompt.id}`)}
-          >
-            <i className="fas fa-edit me-1"></i>
-            Edit
-          </button>
-        )}
       </div>
 
-      <div className="viewer-parts mt-4">
-        <DndContext 
+      <div className="container">
+        <div className="viewer-parts">
+          <DndContext 
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
@@ -717,7 +723,8 @@ const Viewer: React.FC = () => {
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default Viewer;
