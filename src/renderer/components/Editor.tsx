@@ -416,24 +416,30 @@ const Editor: React.FC = () => {
   };
 
   return (
-    <div className="container mt-4 mb-5">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="text-primary mb-0">
-          <i className={`fas ${id ? 'fa-edit' : 'fa-plus-circle'} me-2`}></i>
-          {id ? 'Edit Prompt' : 'Create Prompt'}
-        </h2>
-        <div>
-          <button className="btn btn-outline-secondary me-2 no-drag" onClick={() => navigate('/')}>
-            Cancel
-          </button>
-          <button className="btn btn-success no-drag" onClick={handleSave}>
-            <i className="fas fa-save me-1"></i>
-            Save Prompt
-          </button>
+    <div className="mb-5">
+      <div className="sticky-top bg-white border-bottom shadow-sm mb-4" style={{ zIndex: 1020, margin: '-1rem -1rem 1.5rem -1rem', padding: '0.75rem 0', top: '-1rem' }}>
+        <div className="container">
+          <div className="d-flex justify-content-between align-items-center px-1">
+            <div className="d-flex align-items-center gap-3">
+              <button className="btn btn-sm btn-light border no-drag" onClick={() => navigate(id ? `/viewer/${id}` : '/')} title="Cancel and go back">
+                <i className="fas fa-arrow-left"></i>
+              </button>
+              <h4 className="mb-0 text-dark fw-bold">
+                {id ? 'Edit Prompt' : 'Create New Prompt'}
+              </h4>
+            </div>
+            <div className="d-flex gap-2">
+              <button className="btn btn-sm btn-success no-drag fw-bold" onClick={handleSave}>
+                <i className="fas fa-save me-1"></i>
+                Save Prompt
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="card shadow-sm mb-4">
+      <div className="container">
+        <div className="card shadow-sm mb-4">
         <div className="card-body">
           <div className="mb-3">
             <label className="form-label fw-bold">Title</label>
@@ -512,6 +518,7 @@ const Editor: React.FC = () => {
             </button>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
