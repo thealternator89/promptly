@@ -249,8 +249,17 @@ const Editor: React.FC = () => {
                 <option value="">None</option>
                 <option value="csharp">C#</option>
                 <option value="typescript">TypeScript</option>
+                <option value="javascript">JavaScript</option>
+                <option value="python">Python</option>
+                <option value="sql">SQL</option>
+                <option value="json">JSON</option>
+                <option value="bash">Shell Script</option>
+                <option value="powershell">PowerShell</option>
+                <option value="html">HTML</option>
+                <option value="xml">XML</option>
                 <option value="yaml">YAML</option>
                 <option value="markdown">Markdown</option>
+                <option value="diff">Diff</option>
               </select>
             </div>
           )}
