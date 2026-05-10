@@ -19,6 +19,264 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Prompt, PromptPart, RepeatablePart } from '../../types';
 
+interface ViewerPartProps {
+  part: PromptPart;
+  values: Record<string, string>;
+  languages: Record<string, string>;
+  repeatableInstances: Record<string, string[]>;
+  rawValues: Record<string, string>;
+  handleUpdateValue: (partId: string, value: string) => void;
+  handleRemoveSessionPart: (id: string) => void;
+  addInstance: (repeatablePart: RepeatablePart) => void;
+  removeInstance: (partId: string, instanceId: string) => void;
+  fixIndentation: (compositeId: string) => void;
+  restoreIndentation: (compositeId: string) => void;
+  handlePaste: (compositeId: string, e: React.ClipboardEvent<HTMLTextAreaElement>) => void;
+  parentId?: string;
+  instanceId?: string;
+  attributes?: any;
+  listeners?: any;
+  setLanguages: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+}
+
+const ViewerPart: React.FC<ViewerPartProps> = ({
+  part,
+  values,
+  languages,
+  repeatableInstances,
+  rawValues,
+  handleUpdateValue,
+  handleRemoveSessionPart,
+  addInstance,
+  removeInstance,
+  fixIndentation,
+  restoreIndentation,
+  handlePaste,
+  parentId,
+  instanceId,
+  attributes,
+  listeners,
+  setLanguages,
+}) => {
+  const compositeId = parentId && instanceId ? `${parentId}_${instanceId}_${part.id}` : part.id;
+  const isNested = !!parentId;
+
+  return (
+    <div className="mb-2 position-relative group">
+      {!isNested && (
+        <div className="d-flex justify-content-between align-items-center mb-2">
+          <div className="d-flex align-items-center gap-2">
+            <div 
+              className="cursor-pointer text-muted opacity-50 hover-opacity-100 transition no-drag"
+              {...attributes}
+              {...listeners}
+              title="Drag to reorder"
+            >
+              <i className="fas fa-grip-vertical"></i>
+            </div>
+            <span className="badge bg-light text-secondary text-uppercase border" style={{ fontSize: '0.65rem', opacity: 0.8 }}>{part.type}</span>
+          </div>
+          <button 
+            className="btn btn-sm text-danger opacity-0 group-hover-opacity-100 no-drag transition" 
+            onClick={() => handleRemoveSessionPart(part.id)}
+            title="Remove section"
+          >
+            <i className="fas fa-trash-alt"></i>
+          </button>
+        </div>
+      )}
+
+      {part.type === 'heading' && (
+        <div className="py-2">
+          {part.level === 1 && <h1 className="mb-0">{part.text}</h1>}
+          {part.level === 2 && <h2 className="mb-0">{part.text}</h2>}
+          {part.level === 3 && <h3 className="mb-0">{part.text}</h3>}
+        </div>
+      )}
+
+      {part.type === 'fixed' && (
+        <div className="card bg-light border-0">
+          <div className="card-body py-3 px-4 white-space-pre-wrap selectable">
+            {part.text}
+          </div>
+        </div>
+      )}
+
+      {part.type === 'custom' && (
+        part.singleLine ? (
+          <input
+            type="text"
+            className="form-control no-drag border-primary border-start border-4"
+            placeholder={part.placeholder || "Enter text..."}
+            value={values[compositeId] || ''}
+            onChange={(e) => handleUpdateValue(compositeId, e.target.value)}
+          />
+        ) : (
+          <textarea
+            className="form-control no-drag border-primary border-start border-4"
+            rows={3}
+            placeholder={part.placeholder || "Enter text..."}
+            value={values[compositeId] || ''}
+            onChange={(e) => handleUpdateValue(compositeId, e.target.value)}
+          />
+        )
+      )}
+
+      {part.type === 'quote' && (
+        <div className="d-flex border-start border-4 border-info">
+          <textarea
+            className="form-control no-drag border-0 bg-light"
+            rows={2}
+            placeholder="Enter quote text..."
+            value={values[compositeId] || ''}
+            onChange={(e) => handleUpdateValue(compositeId, e.target.value)}
+            style={{ fontStyle: 'italic' }}
+          />
+        </div>
+      )}
+
+      {part.type === 'code' && (
+        <div className="bg-dark rounded overflow-hidden">
+          <textarea
+            className="form-control no-drag font-monospace bg-dark text-light border-0"
+            rows={5}
+            placeholder={`Enter ${languages[compositeId] || 'code'} here...`}
+            value={values[compositeId] || ''}
+            onChange={(e) => handleUpdateValue(compositeId, e.target.value)}
+            onPaste={(e) => handlePaste(compositeId, e)}
+            style={{ fontSize: '0.9rem' }}
+          />
+          <div className="d-flex justify-content-between align-items-center px-2 pb-2">
+            {rawValues[compositeId] ? (
+              <button 
+                className="btn btn-sm btn-outline-warning border-0 no-drag opacity-75" 
+                onClick={() => restoreIndentation(compositeId)}
+                title="Restore original indentation"
+                style={{ fontSize: '0.7rem' }}
+              >
+                <i className="fas fa-undo me-1"></i>
+                Reset Indentation
+              </button>
+            ) : (
+              <button 
+                className="btn btn-sm btn-outline-light border-0 no-drag opacity-75" 
+                onClick={() => fixIndentation(compositeId)}
+                title="Fix surplus indentation"
+                style={{ fontSize: '0.7rem' }}
+              >
+                <i className="fas fa-outdent me-1"></i>
+                Fix Indentation
+              </button>
+            )}
+            <div className="input-group input-group-sm" style={{ width: '160px' }}>
+              <span className="input-group-text bg-secondary border-0 text-white small" style={{ fontSize: '0.7rem' }}>Lang:</span>
+              <select
+                className="form-select form-select-sm no-drag bg-secondary bg-opacity-25 border-0 text-white"
+                value={languages[compositeId] || ''}
+                onChange={(e) => setLanguages(prev => ({ ...prev, [compositeId]: e.target.value }))}
+                style={{ fontSize: '0.7rem', cursor: 'pointer' }}
+              >
+                <option value="">None</option>
+                <option value="csharp">C#</option>
+                <option value="typescript">TypeScript</option>
+                <option value="yaml">YAML</option>
+                <option value="markdown">Markdown</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {part.type === 'hr' && <hr className="my-4" />}
+
+      {part.type === 'repeatable' && (
+        <div className="repeatable-section border rounded p-3 bg-light bg-opacity-50">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <span className="badge bg-secondary text-uppercase">Repeatable Section</span>
+          </div>
+          
+          {(repeatableInstances[part.id] || []).map((instId, idx) => (
+            <div key={instId} className="card mb-3 shadow-sm">
+              <div className="card-header bg-white d-flex justify-content-between align-items-center py-1 px-3">
+                <small className="text-muted fw-bold">Instance #{idx + 1}</small>
+                <button 
+                  className="btn btn-sm text-danger no-drag" 
+                  onClick={() => removeInstance(part.id, instId)}
+                  disabled={(repeatableInstances[part.id] || []).length <= 1}
+                >
+                  <i className="fas fa-times-circle"></i>
+                </button>
+              </div>
+              <div className="card-body p-3">
+                {part.templateParts.map(tp => (
+                  <ViewerPart
+                    key={`${part.id}_${instId}_${tp.id}`}
+                    part={tp}
+                    values={values}
+                    languages={languages}
+                    repeatableInstances={repeatableInstances}
+                    rawValues={rawValues}
+                    handleUpdateValue={handleUpdateValue}
+                    handleRemoveSessionPart={handleRemoveSessionPart}
+                    addInstance={addInstance}
+                    removeInstance={removeInstance}
+                    fixIndentation={fixIndentation}
+                    restoreIndentation={restoreIndentation}
+                    handlePaste={handlePaste}
+                    parentId={part.id}
+                    instanceId={instId}
+                    setLanguages={setLanguages}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+          
+          <div className="text-center mt-2">
+            <button className="btn btn-sm btn-outline-secondary no-drag" onClick={() => addInstance(part)}>
+              <i className="fas fa-plus-circle me-1"></i>
+              Add another instance
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+interface SortablePartProps extends Omit<ViewerPartProps, 'attributes' | 'listeners'> {
+  part: PromptPart;
+}
+
+const SortablePart: React.FC<SortablePartProps> = (props) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: props.part.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 1000 : 0,
+    position: 'relative' as const,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <ViewerPart
+        {...props}
+        attributes={attributes}
+        listeners={listeners}
+      />
+    </div>
+  );
+};
+
 const Viewer: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -370,199 +628,6 @@ const Viewer: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const SortablePart: React.FC<{ part: PromptPart }> = ({ part }) => {
-    const {
-      attributes,
-      listeners,
-      setNodeRef,
-      transform,
-      transition,
-      isDragging,
-    } = useSortable({ id: part.id });
-
-    const style = {
-      transform: CSS.Transform.toString(transform),
-      transition,
-      zIndex: isDragging ? 1000 : 0,
-      position: 'relative' as const,
-      opacity: isDragging ? 0.5 : 1,
-    };
-
-    return (
-      <div ref={setNodeRef} style={style}>
-        {renderPart(part, undefined, undefined, attributes, listeners)}
-      </div>
-    );
-  };
-
-  const renderPart = (part: PromptPart, parentId?: string, instanceId?: string, attributes?: any, listeners?: any) => {
-    const compositeId = parentId && instanceId ? `${parentId}_${instanceId}_${part.id}` : part.id;
-    const isNested = !!parentId;
-
-    return (
-      <div key={compositeId} className="mb-2 position-relative group">
-        {!isNested && (
-          <div className="d-flex justify-content-between align-items-center mb-2">
-            <div className="d-flex align-items-center gap-2">
-              <div 
-                className="cursor-pointer text-muted opacity-50 hover-opacity-100 transition no-drag"
-                {...attributes}
-                {...listeners}
-                title="Drag to reorder"
-              >
-                <i className="fas fa-grip-vertical"></i>
-              </div>
-              <span className="badge bg-light text-secondary text-uppercase border" style={{ fontSize: '0.65rem', opacity: 0.8 }}>{part.type}</span>
-            </div>
-            <button 
-              className="btn btn-sm text-danger opacity-0 group-hover-opacity-100 no-drag transition" 
-              onClick={() => handleRemoveSessionPart(part.id)}
-              title="Remove section"
-            >
-              <i className="fas fa-trash-alt"></i>
-            </button>
-          </div>
-        )}
-
-        {part.type === 'heading' && (
-          <div className="py-2">
-            {part.level === 1 && <h1 className="mb-0">{part.text}</h1>}
-            {part.level === 2 && <h2 className="mb-0">{part.text}</h2>}
-            {part.level === 3 && <h3 className="mb-0">{part.text}</h3>}
-          </div>
-        )}
-
-        {part.type === 'fixed' && (
-          <div className="card bg-light border-0">
-            <div className="card-body py-3 px-4 white-space-pre-wrap selectable">
-              {part.text}
-            </div>
-          </div>
-        )}
-
-        {part.type === 'custom' && (
-          part.singleLine ? (
-            <input
-              type="text"
-              className="form-control no-drag border-primary border-start border-4"
-              placeholder={part.placeholder || "Enter text..."}
-              value={values[compositeId] || ''}
-              onChange={(e) => handleUpdateValue(compositeId, e.target.value)}
-            />
-          ) : (
-            <textarea
-              className="form-control no-drag border-primary border-start border-4"
-              rows={3}
-              placeholder={part.placeholder || "Enter text..."}
-              value={values[compositeId] || ''}
-              onChange={(e) => handleUpdateValue(compositeId, e.target.value)}
-            />
-          )
-        )}
-
-        {part.type === 'quote' && (
-          <div className="d-flex border-start border-4 border-info">
-            <textarea
-              className="form-control no-drag border-0 bg-light"
-              rows={2}
-              placeholder="Enter quote text..."
-              value={values[compositeId] || ''}
-              onChange={(e) => handleUpdateValue(compositeId, e.target.value)}
-              style={{ fontStyle: 'italic' }}
-            />
-          </div>
-        )}
-
-        {part.type === 'code' && (
-          <div className="bg-dark rounded overflow-hidden">
-            <textarea
-              className="form-control no-drag font-monospace bg-dark text-light border-0"
-              rows={5}
-              placeholder={`Enter ${languages[compositeId] || 'code'} here...`}
-              value={values[compositeId] || ''}
-              onChange={(e) => handleUpdateValue(compositeId, e.target.value)}
-              onPaste={(e) => handlePaste(compositeId, e)}
-              style={{ fontSize: '0.9rem' }}
-            />
-            <div className="d-flex justify-content-between align-items-center px-2 pb-2">
-              {rawValues[compositeId] ? (
-                <button 
-                  className="btn btn-sm btn-outline-warning border-0 no-drag opacity-75" 
-                  onClick={() => restoreIndentation(compositeId)}
-                  title="Restore original indentation"
-                  style={{ fontSize: '0.7rem' }}
-                >
-                  <i className="fas fa-undo me-1"></i>
-                  Reset Indentation
-                </button>
-              ) : (
-                <button 
-                  className="btn btn-sm btn-outline-light border-0 no-drag opacity-75" 
-                  onClick={() => fixIndentation(compositeId)}
-                  title="Fix surplus indentation"
-                  style={{ fontSize: '0.7rem' }}
-                >
-                  <i className="fas fa-outdent me-1"></i>
-                  Fix Indentation
-                </button>
-              )}
-              <div className="input-group input-group-sm" style={{ width: '160px' }}>
-                <span className="input-group-text bg-secondary border-0 text-white small" style={{ fontSize: '0.7rem' }}>Lang:</span>
-                <select
-                  className="form-select form-select-sm no-drag bg-secondary bg-opacity-25 border-0 text-white"
-                  value={languages[compositeId] || ''}
-                  onChange={(e) => setLanguages(prev => ({ ...prev, [compositeId]: e.target.value }))}
-                  style={{ fontSize: '0.7rem', cursor: 'pointer' }}
-                >
-                  <option value="">None</option>
-                  <option value="csharp">C#</option>
-                  <option value="typescript">TypeScript</option>
-                  <option value="yaml">YAML</option>
-                  <option value="markdown">Markdown</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {part.type === 'hr' && <hr className="my-4" />}
-
-        {part.type === 'repeatable' && (
-          <div className="repeatable-section border rounded p-3 bg-light bg-opacity-50">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <span className="badge bg-secondary text-uppercase">Repeatable Section</span>
-            </div>
-            
-            {(repeatableInstances[part.id] || []).map((instId, idx) => (
-              <div key={instId} className="card mb-3 shadow-sm">
-                <div className="card-header bg-white d-flex justify-content-between align-items-center py-1 px-3">
-                  <small className="text-muted fw-bold">Instance #{idx + 1}</small>
-                  <button 
-                    className="btn btn-sm text-danger no-drag" 
-                    onClick={() => removeInstance(part.id, instId)}
-                    disabled={(repeatableInstances[part.id] || []).length <= 1}
-                  >
-                    <i className="fas fa-times-circle"></i>
-                  </button>
-                </div>
-                <div className="card-body p-3">
-                  {part.templateParts.map(tp => renderPart(tp, part.id, instId, undefined, undefined))}
-                </div>
-              </div>
-            ))}
-            
-            <div className="text-center mt-2">
-              <button className="btn btn-sm btn-outline-secondary no-drag" onClick={() => addInstance(part)}>
-                <i className="fas fa-plus-circle me-1"></i>
-                Add another instance
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   if (!prompt) return <div className="container mt-4">Loading...</div>;
 
   return (
@@ -597,7 +662,22 @@ const Viewer: React.FC = () => {
             strategy={verticalListSortingStrategy}
           >
             {sessionParts.map((part) => (
-              <SortablePart key={part.id} part={part} />
+              <SortablePart 
+                key={part.id} 
+                part={part}
+                values={values}
+                languages={languages}
+                repeatableInstances={repeatableInstances}
+                rawValues={rawValues}
+                handleUpdateValue={handleUpdateValue}
+                handleRemoveSessionPart={handleRemoveSessionPart}
+                addInstance={addInstance}
+                removeInstance={removeInstance}
+                fixIndentation={fixIndentation}
+                restoreIndentation={restoreIndentation}
+                handlePaste={handlePaste}
+                setLanguages={setLanguages}
+              />
             ))}
           </SortableContext>
         </DndContext>
