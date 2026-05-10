@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   DndContext,
   closestCenter,
@@ -289,6 +289,7 @@ const SortablePart: React.FC<SortablePartProps> = (props) => {
 const Viewer: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [sessionParts, setSessionParts] = useState<PromptPart[]>([]);
   const [disallowedDomains, setDisallowedDomains] = useState<string[]>([]);
@@ -297,6 +298,59 @@ const Viewer: React.FC = () => {
   const [repeatableInstances, setRepeatableInstances] = useState<Record<string, string[]>>({});
   const [rawValues, setRawValues] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState(false);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [saveTitle, setSaveTitle] = useState('');
+  const [saveDescription, setSaveDescription] = useState('');
+
+  const hasTemporarySections = sessionParts.some(p => p.id.startsWith('session_'));
+
+  const handleAddToLibrary = async () => {
+    if (!saveTitle.trim()) {
+      alert('Please enter a title');
+      return;
+    }
+
+    const newId = 'prompt_' + Date.now().toString() + Math.random().toString(36).substr(2, 5);
+    
+    // Map session parts to permanent parts
+    const mapPart = (part: PromptPart): PromptPart => {
+      const cleanId = part.id.replace('session_', 'part_');
+      
+      const newPart = { ...part, id: cleanId };
+      
+      if (newPart.type === 'custom') {
+        // For custom parts, we want to save the current value as the new default
+        newPart.defaultText = values[part.id] || '';
+      } else if (newPart.type === 'repeatable') {
+        newPart.templateParts = newPart.templateParts.map(tp => mapPart(tp));
+      }
+      
+      return newPart;
+    };
+
+    const newParts = sessionParts.map(p => mapPart(p));
+
+    const newPrompt: Prompt = {
+      id: newId,
+      title: saveTitle,
+      description: saveDescription,
+      parts: newParts,
+      createdAt: Date.now()
+    };
+
+    await window.electronAPI.createPrompt(newPrompt);
+    setIsSaveModalOpen(false);
+    
+    // Navigate and preserve state
+    navigate(`/viewer/${newId}`, { 
+      state: { 
+        preservedValues: values, 
+        preservedLanguages: languages,
+        preservedRawValues: rawValues,
+        preservedRepeatableInstances: repeatableInstances
+      } 
+    });
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -311,43 +365,44 @@ const Viewer: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
+      let data: Prompt;
+      let settings: any;
+
       if (id === 'scratchpad') {
-        const settings = await window.electronAPI.getSettings();
-        setPrompt({
+        settings = await window.electronAPI.getSettings();
+        data = {
           id: 'scratchpad',
           title: 'Scratchpad',
           description: 'Temporary workspace for ad-hoc prompts',
           parts: [],
           createdAt: Date.now()
-        });
-        setSessionParts([]);
-        setDisallowedDomains(
-          (settings.disallowedDomains || '')
-            .split('\n')
-            .map(d => d.trim())
-            .filter(d => d.length > 0)
-        );
-        setValues({});
-        setLanguages({});
-        setRepeatableInstances({});
-        return;
-      }
-
-      if (id) {
-        const [data, settings] = await Promise.all([
+        };
+      } else if (id) {
+        [data, settings] = await Promise.all([
           window.electronAPI.getPrompt(id),
           window.electronAPI.getSettings()
         ]);
-        
-        setPrompt(data);
-        setSessionParts(data.parts);
-        setDisallowedDomains(
-          (settings.disallowedDomains || '')
-            .split('\n')
-            .map(d => d.trim())
-            .filter(d => d.length > 0)
-        );
-        
+      } else {
+        return;
+      }
+      
+      setPrompt(data);
+      setSessionParts(data.parts);
+      setDisallowedDomains(
+        (settings.disallowedDomains || '')
+          .split('\n')
+          .map((d: string) => d.trim())
+          .filter((d: string) => d.length > 0)
+      );
+      
+      // Check for preserved state from navigation (e.g. after "Add to Library")
+      const state = location.state as any;
+      if (state?.preservedValues) {
+        setValues(state.preservedValues);
+        setLanguages(state.preservedLanguages || {});
+        setRawValues(state.preservedRawValues || {});
+        setRepeatableInstances(state.preservedRepeatableInstances || {});
+      } else {
         const initialValues: Record<string, string> = {};
         const initialLanguages: Record<string, string> = {};
         const initialRepeatableInstances: Record<string, string[]> = {};
@@ -381,7 +436,7 @@ const Viewer: React.FC = () => {
       }
     };
     loadData();
-  }, [id]);
+  }, [id, location.state]);
 
   const handleUpdateValue = (partId: string, value: string) => {
     setValues(prev => ({ ...prev, [partId]: value }));
@@ -651,6 +706,19 @@ const Viewer: React.FC = () => {
               <h4 className="mb-0 text-dark fw-bold">{prompt.title}</h4>
             </div>
             <div className="d-flex gap-2">
+              <button 
+                className={`btn btn-sm ${hasTemporarySections ? 'btn-primary' : 'btn-outline-secondary'} no-drag`}
+                onClick={() => {
+                  setSaveTitle(prompt.id === 'scratchpad' ? '' : `${prompt.title} (Copy)`);
+                  setSaveDescription(prompt.id === 'scratchpad' ? '' : prompt.description);
+                  setIsSaveModalOpen(true);
+                }}
+                disabled={!hasTemporarySections}
+                title={hasTemporarySections ? "Save this configuration to your library" : "Add temporary sections first to save to library"}
+              >
+                <i className="fas fa-plus-square me-1"></i>
+                Add to Library
+              </button>
               {id !== 'scratchpad' && (
                 <button 
                   className="btn btn-sm btn-outline-primary no-drag" 
@@ -723,8 +791,53 @@ const Viewer: React.FC = () => {
         </div>
       </div>
     </div>
-  </div>
-);
+
+      {isSaveModalOpen && (
+        <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content shadow-lg border-0">
+              <div className="modal-header bg-primary text-white border-0">
+                <h5 className="modal-title">
+                  <i className="fas fa-save me-2"></i>
+                  Add to Library
+                </h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setIsSaveModalOpen(false)}></button>
+              </div>
+              <div className="modal-body p-4">
+                <div className="mb-3">
+                  <label className="form-label fw-bold small text-uppercase text-muted">Title</label>
+                  <input
+                    type="text"
+                    className="form-control form-control-lg border-2"
+                    placeholder="e.g. My Refined Prompt"
+                    value={saveTitle}
+                    onChange={(e) => setSaveTitle(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+                <div className="mb-0">
+                  <label className="form-label fw-bold small text-uppercase text-muted">Description</label>
+                  <textarea
+                    className="form-control border-2"
+                    rows={3}
+                    placeholder="What is this prompt for?"
+                    value={saveDescription}
+                    onChange={(e) => setSaveDescription(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="modal-footer border-0 p-4 pt-0">
+                <button type="button" className="btn btn-light px-4" onClick={() => setIsSaveModalOpen(false)}>Cancel</button>
+                <button type="button" className="btn btn-primary px-4 fw-bold" onClick={handleAddToLibrary}>
+                  Save to Library
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default Viewer;
