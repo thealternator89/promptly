@@ -269,6 +269,7 @@ const Editor: React.FC = () => {
   const [description, setDescription] = useState('');
   const [parts, setParts] = useState<PromptPart[]>([]);
   const [createdAt, setCreatedAt] = useState<number>(Date.now());
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -415,6 +416,20 @@ const Editor: React.FC = () => {
     navigate(id ? `/viewer/${id}` : '/');
   };
 
+  const handleDelete = async () => {
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      // Reset confirmation state after 3 seconds if not clicked
+      setTimeout(() => setConfirmDelete(false), 3000);
+      return;
+    }
+
+    if (id) {
+      await window.electronAPI.deletePrompt(id);
+      navigate('/');
+    }
+  };
+
   return (
     <div className="mb-5">
       <div className="sticky-top bg-white border-bottom shadow-sm mb-4" style={{ zIndex: 1020, margin: '-1rem -1rem 1.5rem -1rem', padding: '0.75rem 0', top: '-1rem' }}>
@@ -429,6 +444,16 @@ const Editor: React.FC = () => {
               </h4>
             </div>
             <div className="d-flex gap-2">
+              {id && (
+                <button 
+                  className={`btn btn-sm no-drag fw-bold ${confirmDelete ? 'btn-danger' : 'btn-outline-danger'}`} 
+                  onClick={handleDelete}
+                  title={confirmDelete ? "Click again to confirm deletion" : "Delete this prompt"}
+                >
+                  <i className="fas fa-trash me-1"></i>
+                  {confirmDelete ? 'Confirm Delete' : 'Delete'}
+                </button>
+              )}
               <button className="btn btn-sm btn-success no-drag fw-bold" onClick={handleSave}>
                 <i className="fas fa-save me-1"></i>
                 Save Prompt

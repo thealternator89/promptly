@@ -94,6 +94,30 @@ ipcMain.handle('create-prompt', async (event, prompt: Prompt) => {
   return true;
 });
 
+ipcMain.handle('delete-prompt', async (event, id: string) => {
+  await ensurePromptsDir();
+  const filePath = path.join(PROMPTS_DIR, `${id}.json`);
+  try {
+    await fs.unlink(filePath);
+    
+    // Also remove from order.json if it exists
+    const orderFilePath = path.join(PROMPTS_DIR, 'order.json');
+    let order: string[] = [];
+    try {
+      const orderContent = await fs.readFile(orderFilePath, 'utf-8');
+      order = JSON.parse(orderContent);
+      const newOrder = order.filter(orderId => orderId !== id);
+      await fs.writeFile(orderFilePath, JSON.stringify(newOrder), 'utf-8');
+    } catch (e) {
+      // order.json might not exist, ignore
+    }
+  } catch (error) {
+    console.error('Failed to delete prompt:', error);
+    throw error;
+  }
+  return true;
+});
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
   app.quit();
